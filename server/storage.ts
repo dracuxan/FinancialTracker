@@ -37,7 +37,12 @@ export interface IStorage {
   getLedgerAccount(id: number): Promise<LedgerAccount | undefined>;
 
   // Income statement methods
-  getIncomeStatement(startDate: Date, endDate: Date): Promise<IncomeStatement>;
+  getIncomeStatement(startDate: Date, endDate: Date, inventoryData?: {
+    openingStock: number;
+    purchases: number;
+    closingStock: number;
+    purchaseReturns: number;
+  }): Promise<IncomeStatement>;
 }
 
 export class MemStorage implements IStorage {
@@ -222,7 +227,16 @@ export class MemStorage implements IStorage {
   }
 
   // Income statement methods
-  async getIncomeStatement(startDate: Date, endDate: Date): Promise<IncomeStatement> {
+  async getIncomeStatement(
+    startDate: Date, 
+    endDate: Date, 
+    inventoryData?: {
+      openingStock: number;
+      purchases: number;
+      closingStock: number;
+      purchaseReturns: number;
+    }
+  ): Promise<IncomeStatement> {
     const accounts = await this.getAccounts();
     const revenueAccounts = accounts.filter(account => account.type === 'revenue');
     const expenseAccounts = accounts.filter(account => account.type === 'expense');
@@ -275,16 +289,43 @@ export class MemStorage implements IStorage {
       };
     }).filter(item => item.amount > 0);
 
+    // Default inventory data
+    const defaultInventory = {
+      openingStock: 0,
+      purchases: 0,
+      closingStock: 0,
+      purchaseReturns: 0
+    };
+
+    // Use provided inventory data or default
+    const inventory = inventoryData || defaultInventory;
+    
+    // Calculate COGS using the formula: COGS = Opening Stock + Purchases - Closing Stock - Purchase Returns
+    const cogs = inventory.openingStock + inventory.purchases - inventory.closingStock - inventory.purchaseReturns;
+    
+    // Create inventory item with calculated COGS
+    const inventoryItem = {
+      ...inventory,
+      cogs
+    };
+
     // Calculate totals
     const totalRevenue = revenues.reduce((sum, item) => sum + item.amount, 0);
     const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
-    const netIncome = totalRevenue - totalExpenses;
+    
+    // Calculate gross profit (Revenue - COGS)
+    const grossProfit = totalRevenue - cogs;
+    
+    // Calculate net income (gross profit - other expenses)
+    const netIncome = grossProfit - totalExpenses;
 
     return {
       revenues,
       expenses,
       totalRevenue,
       totalExpenses,
+      inventory: inventoryItem,
+      grossProfit,
       netIncome,
       startDate,
       endDate

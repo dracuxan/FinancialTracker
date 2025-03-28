@@ -6,7 +6,15 @@ interface IncomeTableProps {
 }
 
 export default function IncomeTable({ incomeStatement }: IncomeTableProps) {
-  const { revenues, expenses, totalRevenue, totalExpenses, netIncome } = incomeStatement;
+  const { 
+    revenues, 
+    expenses, 
+    totalRevenue, 
+    totalExpenses, 
+    netIncome,
+    inventory,
+    grossProfit
+  } = incomeStatement;
   
   return (
     <table className="w-full mb-8">
@@ -30,9 +38,51 @@ export default function IncomeTable({ incomeStatement }: IncomeTableProps) {
           <td className="py-2 text-right font-medium">{formatCurrency(totalRevenue)}</td>
         </tr>
         
-        {/* Expenses Section */}
+        {/* Cost of Goods Sold Section */}
         <tr>
-          <td colSpan={3} className="py-2 font-bold text-lg">Expenses</td>
+          <td colSpan={3} className="py-2 font-bold text-lg">Cost of Goods Sold</td>
+        </tr>
+        
+        <tr>
+          <td className="py-1 pl-8">Opening Stock</td>
+          <td className="py-1 text-right">{formatCurrency(inventory.openingStock)}</td>
+          <td></td>
+        </tr>
+        
+        <tr>
+          <td className="py-1 pl-8">Add: Purchases</td>
+          <td className="py-1 text-right">{formatCurrency(inventory.purchases)}</td>
+          <td></td>
+        </tr>
+        
+        <tr>
+          <td className="py-1 pl-8">Less: Closing Stock</td>
+          <td className="py-1 text-right">({formatCurrency(inventory.closingStock)})</td>
+          <td></td>
+        </tr>
+        
+        <tr>
+          <td className="py-1 pl-8">Less: Purchase Returns</td>
+          <td className="py-1 text-right">({formatCurrency(inventory.purchaseReturns)})</td>
+          <td></td>
+        </tr>
+        
+        <tr>
+          <td className="py-2 font-medium">Cost of Goods Sold</td>
+          <td></td>
+          <td className="py-2 text-right font-medium">{formatCurrency(inventory.cogs)}</td>
+        </tr>
+        
+        {/* Gross Profit */}
+        <tr>
+          <td className="py-2 font-medium">Gross Profit</td>
+          <td></td>
+          <td className="py-2 text-right font-medium">{formatCurrency(grossProfit)}</td>
+        </tr>
+        
+        {/* Other Expenses Section */}
+        <tr>
+          <td colSpan={3} className="py-2 font-bold text-lg">Operating Expenses</td>
         </tr>
         
         {expenses.map(expense => (
@@ -44,7 +94,7 @@ export default function IncomeTable({ incomeStatement }: IncomeTableProps) {
         ))}
         
         <tr>
-          <td className="py-2 font-medium">Total Expenses</td>
+          <td className="py-2 font-medium">Total Operating Expenses</td>
           <td></td>
           <td className="py-2 text-right font-medium">{formatCurrency(totalExpenses)}</td>
         </tr>

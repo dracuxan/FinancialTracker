@@ -1,20 +1,24 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { IncomeStatement } from "@shared/schema";
 import IncomeTable from "@/components/income/income-table";
 import IncomeCharts from "@/components/income/income-charts";
+import InventoryForm from "@/components/income/inventory-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function IncomeStatementPage() {
+  const queryClient = useQueryClient();
   const [period, setPeriod] = useState<string>("month");
   const [showCustomDates, setShowCustomDates] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<string>(getDefaultStartDate("month"));
   const [endDate, setEndDate] = useState<string>(formatDate(new Date()));
+  const [activeTab, setActiveTab] = useState<string>("statement");
   
   // Calculate default start date based on period
   function getDefaultStartDate(periodType: string): string {
@@ -58,7 +62,8 @@ export default function IncomeStatementPage() {
   // Fetch income statement data
   const { 
     data: incomeStatement,
-    isLoading
+    isLoading,
+    refetch
   } = useQuery<IncomeStatement>({
     queryKey: ['/api/income-statement', startDate, endDate],
     queryFn: async ({ queryKey }) => {
@@ -76,6 +81,13 @@ export default function IncomeStatementPage() {
     if (startDate && endDate) {
       // The query will automatically refetch when startDate or endDate changes
     }
+  };
+  
+  // Handle successful inventory update
+  const handleInventorySuccess = () => {
+    // Invalidate and refetch income statement data
+    queryClient.invalidateQueries({ queryKey: ['/api/income-statement'] });
+    setActiveTab("statement"); // Switch back to statement tab
   };
   
   return (
@@ -164,9 +176,44 @@ export default function IncomeStatementPage() {
               </p>
             </div>
             
-            <IncomeTable incomeStatement={incomeStatement} />
-            
-            <IncomeCharts incomeStatement={incomeStatement} />
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="statement">Income Statement</TabsTrigger>
+                <TabsTrigger value="inventory">Inventory & COGS</TabsTrigger>
+              </TabsList>
+              <TabsContent value="statement" className="pt-4">
+                <IncomeTable incomeStatement={incomeStatement} />
+                <IncomeCharts incomeStatement={incomeStatement} />
+              </TabsContent>
+              <TabsContent value="inventory" className="pt-4">
+                <InventoryForm 
+                  startDate={startDate} 
+                  endDate={endDate} 
+                  onSuccess={handleInventorySuccess}
+                />
+                
+                <div className="bg-gray-50 p-4 border rounded-lg">
+                  <h3 className="font-medium text-lg mb-4">Cost of Goods Sold Calculation</h3>
+                  <p className="mb-3 text-sm">The formula for calculating Cost of Goods Sold (COGS) is:</p>
+                  <div className="bg-white p-3 border rounded mb-4">
+                    <strong>COGS = Opening Stock + Purchases - Closing Stock - Purchase Returns</strong>
+                  </div>
+                  <p className="mb-2 text-sm">Where:</p>
+                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                    <li><strong>Opening Stock</strong>: Value of inventory at the beginning of the period.</li>
+                    <li><strong>Purchases</strong>: Cost of new inventory bought during the period.</li>
+                    <li><strong>Closing Stock</strong>: Value of unsold inventory at the end of the period.</li>
+                    <li><strong>Purchase Returns</strong>: Any stock returned to suppliers.</li>
+                  </ul>
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-sm">Current COGS: <strong>{incomeStatement.inventory ? new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: 'USD'
+                    }).format(incomeStatement.inventory.cogs) : '$0.00'}</strong></p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">

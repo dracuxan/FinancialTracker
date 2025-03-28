@@ -164,6 +164,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update inventory data for income statement
+  app.post("/api/income-statement/inventory", async (req, res) => {
+    try {
+      // Validate inventory data
+      const inventorySchema = z.object({
+        startDate: z.coerce.date(),
+        endDate: z.coerce.date(),
+        openingStock: z.coerce.number().min(0, "Opening stock must be a non-negative number"),
+        purchases: z.coerce.number().min(0, "Purchases must be a non-negative number"),
+        closingStock: z.coerce.number().min(0, "Closing stock must be a non-negative number"),
+        purchaseReturns: z.coerce.number().min(0, "Purchase returns must be a non-negative number")
+      });
+      
+      const inventoryData = inventorySchema.parse(req.body);
+      
+      // Calculate income statement with inventory data
+      const incomeStatement = await storage.getIncomeStatement(
+        inventoryData.startDate,
+        inventoryData.endDate,
+        {
+          openingStock: inventoryData.openingStock,
+          purchases: inventoryData.purchases,
+          closingStock: inventoryData.closingStock,
+          purchaseReturns: inventoryData.purchaseReturns
+        }
+      );
+      
+      res.json(incomeStatement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid inventory data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to generate income statement with inventory data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

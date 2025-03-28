@@ -81,11 +81,21 @@ export type IncomeStatementItem = {
   amount: number;
 };
 
+export type InventoryItem = {
+  openingStock: number;
+  purchases: number;
+  closingStock: number;
+  purchaseReturns: number;
+  cogs: number; // Calculated field
+};
+
 export type IncomeStatement = {
   revenues: IncomeStatementItem[];
   expenses: IncomeStatementItem[];
   totalRevenue: number;
   totalExpenses: number;
+  inventory: InventoryItem;
+  grossProfit: number; // Revenue - COGS
   netIncome: number;
   startDate: Date;
   endDate: Date;
