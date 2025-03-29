@@ -14,7 +14,7 @@ restart:
 		echo "No changes detected, skipping restart."; \
 	else \
 		echo "Changes detected, restarting services..."; \
-		docker-compose up -d --build; \
+		docker-compose up -d; \
 	fi
 
 logs:
