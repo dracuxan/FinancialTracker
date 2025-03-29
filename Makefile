@@ -9,13 +9,7 @@ up:
 down:
 	docker-compose down
 
-restart:
-	@if git diff --quiet HEAD~1; then \
-		echo "No changes detected, skipping restart."; \
-	else \
-		echo "Changes detected, restarting services..."; \
-		docker-compose up -d; \
-	fi
+restart: down up
 
 logs:
 	docker-compose logs -f
